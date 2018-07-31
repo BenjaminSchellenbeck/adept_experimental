@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>adept_msgs</name>
+  <version>1.0.0</version>
+  <description>The adept_msgs package</description>
+
+  <author email="benjamin.schellenbeck@online.de">Benjamin Schellenbeck</author>
+  <maintainer email="benjamin.schellenbeck@online.de">Benjamin Schellenbeck</maintainer>
+
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <build_export_depend>actionlib_msgs</build_export_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+
+  <export>
+
+  </export>
+</package>

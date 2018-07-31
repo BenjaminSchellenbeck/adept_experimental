@@ -1,0 +1,10 @@
+int32 mode
+int32 READ = 1
+int32 WRITE = 2
+
+int32 io_number
+
+---
+bool result
+#For READ true = enabled and false = disabled
+#For WRITE true = success and false = failure

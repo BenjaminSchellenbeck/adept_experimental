@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<xacro:macro name="adept_cobra_s600" params="prefix">
+		<!-- link list -->
+		<link name="${prefix}base_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/visual/base_link.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey">
+					<color rgba=".30 .30 .30 1"/>
+				</material>
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/collision/base_link.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<link name="${prefix}inner_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/visual/link_1.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey"/>
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/collision/link_1.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<link name="${prefix}outer_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/visual/link_2.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey"/>
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/collision/link_2.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+  		<link name="${prefix}quill_prismatic_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/visual/link_3.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey"/>
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/collision/link_3.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<link name="${prefix}quill_rotation_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/visual/link_4.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey"/>
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/collision/link_4.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<link name="${prefix}flyover_cable_link">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/visual/flyover_cable.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="black">
+					<color rgba="0 0 0 1" />
+				</material>
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://adept_cobra_s600_support/meshes/cobra_s600/collision/flyover_cable.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<link name="${prefix}tool0"/>
+		<!-- end of the link list -->
+
+		<!-- join list -->
+		<joint name="${prefix}inner_joint" type="revolute">
+			<origin xyz="0 0 0.342" rpy="0 0 0"/>
+			<parent link="${prefix}base_link"/>
+			<child link="${prefix}inner_link"/>
+			<axis xyz="0 0 1"/>
+			<limit effort="100" lower="-1.8326" upper="1.8326" velocity="6.737"/>
+		</joint>
+  
+		<joint name="${prefix}outer_joint" type="revolute">
+			<origin xyz="0.325 0 0" rpy="0 0 0"/>
+			<parent link="${prefix}inner_link"/>
+			<child link="${prefix}outer_link"/>
+			<axis xyz="0 0 1"/>
+			<limit effort="100" lower="-2.618" upper="2.618" velocity="12.5664"/>
+		</joint>
+
+		<joint name="${prefix}quill_prismatic_joint" type="prismatic">
+			<origin xyz="0.275 0 0.045" rpy="0 0 0"/>
+			<parent link="${prefix}outer_link"/>
+			<child link="${prefix}quill_prismatic_link"/>
+			<axis xyz="0 0 1"/>
+			<limit effort="10" lower="-0.210" upper="0" velocity="1.100"/>
+		</joint>
+
+		<joint name="${prefix}quill_rotation_joint" type="revolute">
+			<origin xyz="0 0 0" rpy="0 0 0"/>
+			<parent link="${prefix}quill_prismatic_link"/>
+			<child link="${prefix}quill_rotation_link"/>
+			<axis xyz="0 0 -1"/>
+			<limit effort="100" lower="-6.2832" upper="6.2832" velocity="20.944"/>
+		</joint>
+
+		<joint name="${prefix}flyover_cable_joint" type="revolute">
+			<origin xyz="0 0 0.550" rpy="0 0 0"/>
+			<parent link="${prefix}base_link"/>
+			<child link="${prefix}flyover_cable_link"/>
+			<axis xyz="0 0 1"/>
+			<mimic joint="${prefix}inner_joint" />
+			<limit effort="100" lower="-1.8326" upper="1.8326" velocity="6.737"/>
+		</joint>
+
+		<joint name="${prefix}quill_rotation_link-tool0" type="fixed">
+			<parent link="${prefix}quill_rotation_link"/>
+			<child link="${prefix}tool0"/>
+        		<origin xyz="0 0 0" rpy="3.1415926535898 0 0"/>
+		</joint>
+		<!-- end of the joint list -->
+
+		<!-- ROS base_link to Adept World Coordinates transform -->
+		<link name="${prefix}base" />
+		<joint name="${prefix}base_link-base" type="fixed">
+			<origin xyz="0 0 0" rpy="0 0 0"/>
+			<parent link="${prefix}base_link"/>
+			<child link="${prefix}base"/>
+		</joint>
+	</xacro:macro>
+
+</robot>

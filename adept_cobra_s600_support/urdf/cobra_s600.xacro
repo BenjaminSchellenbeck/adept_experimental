@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="adept_cobra_s600" >
+
+  <!-- cobra_s600 macro -->
+  <xacro:include filename="$(find adept_cobra_s600_support)/urdf/cobra_s600_macro.xacro" />
+
+  <!-- include cobra_s600 -->
+  <xacro:adept_cobra_s600 prefix=""/>
+
+</robot>

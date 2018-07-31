@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>	
+	<!-- fake_io_service: Calculate fake gripper inputs. Any other read or write request is true -->
+	<node name="fake_io_service" pkg="adept_driver" type ="fake_io_service" output="screen">
+		<param name="gripper_io_nr" value="1" />
+		<param name="grasp_input_nr" value="1001" />
+		<param name="release_input_nr" value="1002" />	
+	</node>
+
+	<!-- io_state_publisher: publish selected IOs using the io_service -->
+	<node name="adept_io_publisher" pkg="adept_driver" type ="io_state_publisher" output="screen">
+		<rosparam command="load" file="$(find adept_driver)/param/io_names.yaml"/> 
+		<param name="rate" value="10"/>
+	</node>
+</launch>

@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<launch>
+	<arg name="gripper_joint_state_name" />
+
+	<!-- fake_io_service: Calculate fake gripper inputs. Any other read or write request is true -->
+	<node name="fake_io_service" pkg="adept_driver" type ="fake_io_service" output="screen">
+		<param name="grasp_output_nr" value="104" />
+		<param name="release_output_nr" value="103" />
+		<param name="grasp_input_nr" value="1106" />
+		<param name="release_input_nr" value="1108" />	
+	</node>
+
+	<!-- io_state_publisher: publish selected IOs using the io_service -->
+	<node name="adept_io_publisher" pkg="adept_driver" type ="io_state_publisher" output="screen">
+		<rosparam command="load" file="$(find adept_viper_s650_with_test_gripper_moveit_config)/param/io_names.yaml"/> 
+		<param name="rate" value="10"/>
+	</node>
+
+	<!-- gripper_joint_state_publisher: publish the current joint state of a gripper using the io_service -->
+	<node name="gripper_joint_state_publisher" pkg="adept_gripper_programs" type ="gripper_joint_state_publisher" >
+		<rosparam command="load" file="$(find adept_viper_s650_with_test_gripper_moveit_config)/param/gripper_param.yaml"/> 
+		<param name="rate" value="10"/>
+		<remap from="joint_states" to="$(arg gripper_joint_state_name)"/>
+	</node> 
+    
+	<!--simple_gripper_action_server: use parts of the GraspHandPostureExecution.action for a simple gripping movement
+	<node pkg="adept_gripper_programs" type="simple_gripper_action_server" name="gripper_action_server" output="screen">
+		if suction Gripper is true no inputs will be checked 
+		<param name="suction_gripper" value="false"/> 
+		<param name="grasp_output_nr" value="4" /> 
+		<param name="release_output_nr" value="3" />
+		<param name="grasp_input_nr" value="1106" /> 
+		<param name="release_input_nr" value="1105" /> 
+	</node>-->
+
+	<!--simple_gripper_action_server: use parts of the GraspHandPostureExecution.action for a simple gripping movement-->
+	<node pkg="adept_gripper_programs" type="position_gripper_action_server" name="gripper_action_server" output="screen">
+		<rosparam command="load" file="$(find adept_viper_s650_with_test_gripper_moveit_config)/param/gripper_action_param.yaml"/> 
+		<param name="grasp_output_nr" value="104" />
+		<param name="release_output_nr" value="103" />
+		<param name="min_position" value="0.000" /> 
+		<param name="max_position" value="0.008" /> 
+		<param name="goal_timeout" value="1.0" />
+	</node>
+
+	<!-- joint_state_aggregator: combines 2 joint_states topic messages  -->
+	<node name="joint_state_aggregator" pkg="joint_state_aggregator" type ="joint_state_aggregator" output="screen">
+	  	<param name="rate" value="10"/>
+	  	<param name="robot_joint_state_topic_name" value="robot_joint_states" />
+	  	<param name="gripper_joint_state_topic_name" value="$(arg gripper_joint_state_name)" />
+    	</node>
+</launch>

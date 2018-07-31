@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<launch>
+	<node pkg="adept_gripper_programs" type="simple_gripper_action_server" name="gripper_action_server" output="screen">
+		<!--if suction gripper is true no inputs will be checked -->
+		<param name="suction_gripper" value="false"/> 
+		<param name="grasp_output_nr" value="4" /> 
+		<param name="release_output_nr" value="3" />
+		<param name="grasp_input_nr" value="1106" /> 
+		<param name="release_input_nr" value="1105" /> 
+	</node>
+</launch>

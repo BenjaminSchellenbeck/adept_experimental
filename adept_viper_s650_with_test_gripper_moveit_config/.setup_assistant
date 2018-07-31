@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: test_gripper_description
+    relative_path: urdf/viper_s650_with_gripper.urdf.xacro
+    xacro_args: "--inorder "
+  SRDF:
+    relative_path: config/adept_viper_s650.srdf
+  CONFIG:
+    author_name: Benjamin Schellenbeck
+    author_email: benjamin.schellenbeck@online.de
+    generated_timestamp: 1532172453

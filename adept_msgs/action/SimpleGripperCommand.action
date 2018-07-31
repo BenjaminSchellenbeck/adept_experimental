@@ -1,0 +1,9 @@
+#goal definition
+int32 goal
+
+int32 GRASP = 1
+int32 RELEASE = 2
+---
+#feedback definition
+---
+#result definition

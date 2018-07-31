@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
+		<param name="use_gui" value="true"/>
+	</node> 
+
+	<param name="robot_description" command="$(find xacro)/xacro.py '$(find test_gripper_description)/urdf/viper_s650_with_gripper.urdf.xacro'" />
+
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find test_gripper_description)/rviz/urdf.rviz" />
+</launch>

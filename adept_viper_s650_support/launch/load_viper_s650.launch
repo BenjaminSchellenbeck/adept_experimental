@@ -1,0 +1,3 @@
+<launch>
+	<param name="robot_description" command="$(find xacro)/xacro --inorder '$(find adept_viper_s650_support)/urdf/viper_s650.xacro'" />
+</launch>

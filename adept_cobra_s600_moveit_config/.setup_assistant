@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: adept_cobra_s600_support
+    relative_path: urdf/cobra_s600.xacro
+    xacro_args: "--inorder "
+  SRDF:
+    relative_path: config/adept_cobra_s600.srdf
+  CONFIG:
+    author_name: Benjamin Schellenbeck
+    author_email: benjamin.schellenbeck@online.de
+    generated_timestamp: 1529216274

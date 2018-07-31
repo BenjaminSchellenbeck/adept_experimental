@@ -1,0 +1,23 @@
+<launch>
+  <arg name="ip_str" value="127.0.0.1" />
+
+  <group ns="load_cobra_s600__">
+    <include file="$(find adept_cobra_s600_support)/launch/load_cobra_s600.launch"/>
+  </group>
+
+  <group ns="test_irb2400__">
+    <include file="$(find adept_cobra_s600_support)/launch/test_cobra_s600.launch"/>
+  </group>
+
+  <group ns="robot_interface_download_cobra_s600__">
+    <include file="$(find adept_cobra_s600_support)/launch/robot_interface_download_cobra_s600.launch">
+      <arg name="robot_ip" value="$(arg ip_str)" />
+    </include>
+  </group>
+
+  <group ns="robot_state_visualize_cobra_s600__">
+    <include file="$(find adept_cobra_s600_support)/launch/robot_state_visualize_cobra_s600.launch">
+      <arg name="robot_ip" value="$(arg ip_str)" />
+    </include>
+  </group>
+</launch>

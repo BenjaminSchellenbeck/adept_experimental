@@ -1,0 +1,1 @@
+controller_joint_names: ['inner_joint', 'outer_joint', 'quill_prismatic_joint', 'quill_rotation_joint']

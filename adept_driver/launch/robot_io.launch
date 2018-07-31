@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+	<arg name="robot_ip" />
+
+	<param name="robot_ip_address" type="str" value="$(arg robot_ip)"/>
+	
+	<!-- io_service: read or write an IO when a client request it -->
+	<node name="adept_io" pkg="adept_driver" type ="io_service" output="screen">
+		<param name="socket_rate" value="10" />
+	</node>
+
+	<!-- io_state_publisher: publish selected IOs using the io_service -->
+	<node name="adept_io_publisher" pkg="adept_driver" type ="io_state_publisher" output="screen">
+		<rosparam command="load" file="$(find adept_driver)/param/io_names.yaml"/> 
+		<param name="rate" value="10"/>
+	</node> 
+</launch>

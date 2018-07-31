@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>adept_driver</name>
+  <version>1.0.0</version>
+  <description>The adept_driver package</description>
+
+  <author email="benjamin.schellenbeck@online.de">Benjamin Schellenbeck</author>
+  <maintainer email="benjamin.schellenbeck@online.de">Benjamin Schellenbeck</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>industrial_robot_client</build_depend>
+  <build_depend>simple_message</build_depend>
+  <build_depend>adept_msgs</build_depend>
+  <run_depend>adept_msgs</run_depend>
+
+  <run_depend>industrial_robot_client</run_depend>
+
+  <export>
+
+  </export>
+</package>

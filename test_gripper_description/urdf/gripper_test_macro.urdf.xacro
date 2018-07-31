@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<xacro:macro name="Gripper_test_macro" params="prefix tcp_xyz_origin tcp_rpy_origin ">
+  
+		<link name="${prefix}gripper_base_link">
+			<visual>
+				<origin xyz="0 0 0.0275" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://test_gripper_description/meshes/gripper_base/visual/gripper_base.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey">
+					<color rgba=".30 .30 .30 1"/>
+				</material>
+					
+			</visual>
+    			<collision>
+      				<origin xyz="0 0 0.0275" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://test_gripper_description/meshes/gripper_base/collision/gripper_base.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+
+		<joint name="${prefix}gripper_jaw_1_joint" type="prismatic">
+			<origin xyz="0 0.024 -0.060" rpy="0 0 0"/>
+			
+			<parent link="${prefix}gripper_base_link"/>
+			<child link="${prefix}gripper_jaw_1_link"/>
+			<axis xyz="0 1 0"/>
+			<limit lower="0.000" upper="0.008" effort="1200" velocity="0.15"/>
+		</joint>
+
+		<link name="${prefix}gripper_jaw_1_link">
+			<visual>
+				<origin xyz="0 -0.024 0.0875" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://test_gripper_description/meshes/gripper_jaw/visual/gripper_jaw_1.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey" />
+					
+			</visual>
+    			<collision>
+      				<origin xyz="0 -0.024 0.0875" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://test_gripper_description/meshes/gripper_jaw/collision/gripper_jaw_1.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<joint name="${prefix}gripper_jaw_2_joint" type="prismatic">
+			<origin xyz="0 -0.024 -0.060" rpy="0 0 0"/>
+			<parent link="${prefix}gripper_base_link"/>
+			<child link="${prefix}gripper_jaw_2_link"/>
+			<axis xyz="0 1 0"/>
+			<limit lower="0.000" upper="-0.008" effort="1200" velocity="0.15"/>
+			<mimic joint="${prefix}gripper_jaw_1_joint" multiplier="-1" />
+		</joint>
+
+		<link name="${prefix}gripper_jaw_2_link">
+			<visual>
+				<origin xyz="0 0.024 0.0875" rpy="0 0 0"/>
+				<geometry>
+					<mesh filename="package://test_gripper_description/meshes/gripper_jaw/visual/gripper_jaw_2.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+				<material name="grey" />
+					
+			</visual>
+    			<collision>
+      				<origin xyz="0 0.024 0.0875" rpy="0 0 0"/>
+      				<geometry>
+        				<mesh filename="package://test_gripper_description/meshes/gripper_jaw/collision/gripper_jaw_2.stl" scale="0.001 0.001 0.001"/>
+      				</geometry>
+    			</collision>
+		</link>
+
+		<joint name="${prefix}tcp_joint" type="fixed">
+			<origin xyz="${tcp_xyz_origin}" rpy="${tcp_rpy_origin}" />
+			<parent link="${prefix}gripper_base_link"/>
+			<child link="${prefix}tcp_link"/>		
+		</joint>
+
+		<link name="${prefix}tcp_link" /> 
+
+	</xacro:macro>
+
+</robot>

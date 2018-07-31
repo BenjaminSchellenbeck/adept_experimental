@@ -1,0 +1,13 @@
+#goal definition
+
+float64 position
+---
+#feedback definition
+
+float64 position
+bool goal_achieved
+---
+#result definition
+
+float64 position
+bool goal_achieved

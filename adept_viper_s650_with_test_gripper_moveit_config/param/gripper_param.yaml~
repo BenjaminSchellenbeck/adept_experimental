@@ -1,0 +1,3 @@
+gripper_names: ["gripper_jaw_1_joint", "gripper_jaw_2_joint"]
+gripper_inputs: [1106, 1108]
+gripper_positions: [0.000, 0.006]

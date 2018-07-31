@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="adept_viper_s650" >
+
+	<xacro:include filename="$(find adept_viper_s650_support)/urdf/viper_s650_macro.xacro" />
+	<xacro:adept_viper_s650 prefix=""/>
+
+	<joint name="viper_s650_to_adapter" type="fixed">
+		<parent link="tool0" />
+		<child link = "adapter" />
+		<origin xyz="0.0 0.0 0.0" rpy="3.1415926535898 0.0 0.0" />
+	</joint>
+
+	<xacro:include filename="$(find test_gripper_description)/urdf/gripper_test_macro.urdf.xacro" />  	<xacro:Gripper_test_macro prefix="" tcp_xyz_origin="0 0 -0.1" tcp_rpy_origin="0 0 0"/>
+
+	<link name="adapter">
+		<visual>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+			<geometry>
+				<mesh filename="package://test_gripper_description/meshes/adapter/visual/Adapter_Viper_S650_to_Gripper.stl" scale="0.001 0.001 0.001"/>
+			</geometry>
+			<material name="grey">
+				<color rgba=".30 .30 .30 1"/>
+			</material>
+		</visual>
+		
+		<collision>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+			<geometry>
+				<mesh filename="package://test_gripper_description/meshes/adapter/visual/Adapter_Viper_S650_to_Gripper.stl" scale="0.001 0.001 0.001"/>
+			</geometry>
+		</collision>
+	</link>
+
+	<joint name="adapter_to_test_gripper" type="fixed">
+		<parent link="adapter" />
+		<child link = "gripper_base_link" />
+		<origin xyz="0.0 0.0 -0.0275" rpy="0.0 0.0 0.0" />
+	</joint>
+
+</robot>

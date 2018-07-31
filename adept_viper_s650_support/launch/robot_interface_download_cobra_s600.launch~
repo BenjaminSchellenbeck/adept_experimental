@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot_ip" />
+
+  <rosparam command="load" file="$(find adept_cobra_s600_support)/config/joint_names_adept_cobra_s600.yaml" />
+
+  <include file="$(find adept_driver)/launch/robot_interface.launch">
+    <arg name="robot_ip"    value="$(arg robot_ip)" />
+  </include>
+</launch>

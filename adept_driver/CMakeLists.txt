@@ -1,0 +1,97 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(adept_driver)
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED COMPONENTS industrial_robot_client simple_message adept_msgs)
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if you package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES adept_driver
+  CATKIN_DEPENDS industrial_robot_client adept_msgs
+#  DEPENDS system_lib
+)
+
+###########
+## Build ##
+###########
+
+add_definitions(-DLINUXSOCKETS=1)
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+ include_directories(
+	include
+	${catkin_INCLUDE_DIRS}
+)
+
+# byte-swapping Adept specific robot state node
+add_executable(${PROJECT_NAME}_robot_state_bswap src/adept_robot_state_node.cpp)
+target_link_libraries(${PROJECT_NAME}_robot_state_bswap
+  industrial_robot_client_bswap
+  simple_message_bswap
+  ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_robot_state_bswap PROPERTIES OUTPUT_NAME robot_state_bswap PREFIX "")
+
+# byte-swapping Adept specific motion download interface
+add_executable(${PROJECT_NAME}_motion_download_interface_bswap src/adept_joint_downloader_node.cpp)
+target_link_libraries(${PROJECT_NAME}_motion_download_interface_bswap
+  industrial_robot_client_bswap
+  simple_message_bswap
+  ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_motion_download_interface_bswap PROPERTIES OUTPUT_NAME motion_download_interface_bswap PREFIX "")
+
+# byte-swapping Adept specific motion streaming interface
+add_executable(${PROJECT_NAME}_motion_streaming_interface_bswap src/adept_joint_streamer_node.cpp)
+target_link_libraries(${PROJECT_NAME}_motion_streaming_interface_bswap
+  industrial_robot_client_bswap
+  simple_message_bswap
+  ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_motion_streaming_interface_bswap PROPERTIES OUTPUT_NAME motion_streaming_interface_bswap PREFIX "")
+
+add_executable(${PROJECT_NAME}_fake_io_service src/adept_fake_io_service_node.cpp)
+add_dependencies(${PROJECT_NAME}_fake_io_service src/adept_fake_io_service_node.cpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_fake_io_service ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_fake_io_service PROPERTIES OUTPUT_NAME fake_io_service PREFIX "")
+
+add_executable(${PROJECT_NAME}_io_service src/adept_io_service_node.cpp)
+add_dependencies(${PROJECT_NAME}_io_service src/adept_io_service_node.cpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_io_service ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_io_service PROPERTIES OUTPUT_NAME io_service PREFIX "")
+
+add_executable(${PROJECT_NAME}_io_state_publisher src/adept_io_state_publisher.cpp)
+add_dependencies(${PROJECT_NAME}_io_state_publisher src/adept_io_state_publisher.cpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_io_state_publisher ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_io_state_publisher PROPERTIES OUTPUT_NAME io_state_publisher PREFIX "")
+
+#############
+## Install ##
+#############
+
+install(
+  TARGETS
+    ${PROJECT_NAME}_robot_state_bswap
+    ${PROJECT_NAME}_motion_download_interface_bswap
+    ${PROJECT_NAME}_motion_streaming_interface_bswap
+    ${PROJECT_NAME}_io_service
+    ${PROJECT_NAME}_fake_io_service
+    ${PROJECT_NAME}_io_state_publisher
+  DESTINATION
+    ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+foreach(dir launch rapid)
+  install(
+    DIRECTORY ${dir}/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
+endforeach()

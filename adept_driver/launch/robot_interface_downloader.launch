@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+
+	<!-- robot_ip: IP-address of the robot's socket-messaging server -->
+
+	<arg name="robot_ip" />
+	<arg name="robot_joint_state_name" />
+
+	<!-- copy the specified arguments to the Parameter Server, for use by nodes below -->
+	<param name="robot_ip_address" type="str" value="$(arg robot_ip)"/>
+
+	<!-- robot_state: publishes joint positions and robot-state data
+		   (from socket connection to robot) -->
+
+	<node pkg="adept_driver" type="robot_state_bswap" name="robot_state">
+		<remap from="joint_states" to="$(arg robot_joint_state_name)"/>
+	</node>
+
+	<!-- motion_download_interface: sends robot motion commands by DOWNLOADING path to robot (using socket connection to robot) -->
+	<node pkg="adept_driver" type="motion_download_interface_bswap" name="motion_download_interface">
+	</node>
+
+
+	<!-- joint_trajectory_action: provides actionlib interface for high-level robot control -->
+	<node pkg="industrial_robot_client" type="joint_trajectory_action" name="joint_trajectory_action" output="screen"/>
+
+</launch>

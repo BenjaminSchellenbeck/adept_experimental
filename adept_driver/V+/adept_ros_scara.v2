@@ -1,0 +1,621 @@
+.PROGRAM a.ros()
+;
+; ABSTRACT:  Main entry point for the ROS - Adept interface.
+;
+; INPUTS:       None.
+;
+; OUTPUTS:      None.
+;
+; SIDE EFFECTS: Starts the command-,feedback- and io-Socket-Server and the task.controll()-Program
+;
+; DATA STRUCT:  None.
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2012 by Adept Technology, Inc. (Original version: https://github.com/ros-industrial/swri-ros-pkg/blob/master/adept/adept_common/V%2B/ros.v2)
+
+;* Copyright (c) 2018 by Benjamin Schellenbeck (Further developed version)
+
+; Define globals
+
+
+        cmd.port = 11000    ;TCP port for joint commands
+        io.port = 11001          ;TCP port to read and write io
+        fdb.port = 11002    ;TCP port for joint feedback and status feedback
+        delay.cmd = 1/10    ;Loop delay for joint commands
+        delay.fdb = 1/10    ;Loop delay for joint feedback
+
+; Start running the TCP protocols
+
+        run = TRUE
+
+        EXECUTE 1 ros.srv.fdb()
+        EXECUTE 2 task.controll()
+        EXECUTE 4 ros.io()
+
+        RETURN
+
+.END
+.PROGRAM ros.read.4bytes(lun, long)
+;
+; ABSTRACT:  Reads 4 bytes from the ROS TCP port and converts it to a V+ signed 32-bit binary integer
+;
+; INPUTS:       lun     The TCP lun to read
+;
+; OUTPUTS:      long    V+ signed 32-bit binary integer
+;
+; SIDE EFFECTS: None.
+;
+; DATA STRUCT:  None.
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2012 by Adept Technology, Inc. (Original version: https://github.com/ros-industrial/swri-ros-pkg/blob/master/adept/adept_common/V%2B/ros.v2)
+
+;* Copyright (c) 2018 by Benjamin Schellenbeck (Further developed version)
+
+        AUTO c[4]
+        LOCAL $tmp, i
+
+        $tmp = ""
+        FOR i = 1 TO 4
+            c[i] = GETC(lun)
+            $tmp = $tmp+$CHR(c[i])
+        END
+        long = LNGB($tmp)
+
+.END
+.PROGRAM ros.read.joints(lun, jts[])
+;
+; ABSTRACT: Reads 10 joint angles from ROS.
+;
+; INPUTS:       lun     The TCP lun to read
+;
+; OUTPUTS:      jts[10] The array of joint angles in degrees
+;
+; SIDE EFFECTS: None
+;
+; DATA STRUCT:  None
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2012 by Adept Technology, Inc. (Original version: https://github.com/ros-industrial/swri-ros-pkg/blob/master/adept/adept_common/V%2B/ros.v2)
+
+;* Copyright (c) 2018 by Benjamin Schellenbeck (Further developed version)
+
+        AUTO c[4], $msg.jts[10]
+        LOCAL idx, i, $tmp
+
+        FOR idx = 1 TO 10
+            $tmp = ""
+            FOR i = 1 TO 4
+                c[i] = GETC(lun,2)
+                $tmp = $tmp+$CHR(c[i])
+                $msg.jts[idx] = $tmp
+            END
+
+            jts[idx] = FLTB($msg.jts[idx])
+            IF (idx == 3) THEN
+                jts[idx] = jts[idx]*1000*(-1)
+            ELSE
+                jts[idx] = (jts[idx]*180)/PI
+            END
+        END
+.END
+.PROGRAM ros.srv.fdb()
+;
+; ABSTRACT:  TCP server for sending joint feedback to ROS.
+;
+; INPUTS:       None.
+;
+; OUTPUTS:      None.
+;
+; SIDE EFFECTS: None.
+;
+; DATA STRUCT:  Server streams  <LENGTH(bytes), <10>, <1(COMM_TYPE - TOPIC)>, <0 (REPLY_TYPE - N/A)>,
+;                               <UNUSED <JOINT_DATA[10] (in rads (floats))>
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2012 by Adept Technology, Inc. (Original version: https://github.com/ros-industrial/swri-ros-pkg/blob/master/adept/adept_common/V%2B/ros.v2)
+
+;* Copyright (c) 2018 by Benjamin Schellenbeck (Further developed version)
+
+        AUTO lun, jts[10]
+        AUTO $msg.jts[10]
+        LOCAL status, idx
+        LOCAL $msg
+        LOCAL #cur.loc
+
+    ; Initialize joints
+
+        FOR idx = 1 TO 10
+            jts[idx] = 0
+        END
+
+    ; Open a TCP port
+
+        ATTACH (lun, 4) "TCP"
+        FOPEN (lun, 16) "/LOCAL_PORT"+$ENCODE(fdb.port)+" /CLIENTS 1 /BUFFER_SIZE 1024"
+        status = IOSTAT(lun)
+        IF (status < 0) THEN
+            TYPE "Error opening fdb TCP port: "+$ERROR(status)
+            GOTO 100
+        END
+    ; Server loop
+
+        WHILE run DO
+
+    ; Format a message to send to ROS
+
+            CALL ros.msg.res(56, 10, 1, 0, 0, $msg)
+
+    ; Get the current joint position
+
+            HERE #cur.loc
+            DECOMPOSE jts[1] = #cur.loc
+
+    ; Format the joint data and append it to the message
+
+            FOR idx = 1 TO 10
+                IF (idx == 3) THEN
+                    jts[idx] = jts[idx]*1E-03*(-1)
+                ELSE
+                    jts[idx] = ((jts[idx]*PI)/180)
+                END
+                $msg.jts[idx] = $FLTB(jts[idx])
+                $msg = $msg+$msg.jts[idx]
+            END
+
+    ; Send the message to ROS
+            WRITE (lun) $msg, /S
+
+    ; Check robot status, generate message and send it to ROS
+            CALL ros.robot.state(lun)
+
+    ; Loop delay
+
+            WAIT.EVENT , delay.fdb
+
+        END
+
+    ; Close the TCP port
+   100
+        FCLOSE (lun)
+        DETACH (lun)
+
+    ; Return
+
+        RETURN
+
+.END
+.PROGRAM task.controll()
+;
+; ABSTRACT: If ROS crashes task 0 and 1 end too. Then this programm restart them automatically.
+;
+; INPUTS:   None.
+;
+; OUTPUTS:  None.
+;
+; SIDE EFFECTS: None.
+;
+; DATA STRUCT:  None.
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2018 by Benjamin Schellenbeck
+
+        WHILE TRUE DO
+            WAIT 2
+            IF TASK(1,0) <> 4 THEN
+                EXECUTE 0 ros.srv.cmd()
+                TYPE "Task 5 executed"
+            END
+            IF TASK(1,1) <> 4 THEN
+                EXECUTE 1 ros.srv.fdb()
+                TYPE "Task 6 executed"
+            END
+        END
+.END
+.PROGRAM ros.msg.status(msg.len, msg.type, cmd.type, msg.reply, msg.d_pow, msg.e_stop, msg.err_c, msg.in_err, msg.in_mo, msg.mode, msg.mo_pos, $msg)
+;
+; ABSTRACT: Checks robot states, create ros status message and send it to ros
+;
+; INPUTS:       lun     The TCP lun to read
+;
+; OUTPUTS:      None
+;
+; SIDE EFFECTS: None
+;
+; DATA STRUCT:
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2018 by Benjamin Schellenbeck
+
+        LOCAL $msg.len, $msg.type, $cmd.type, $msg.reply, $msg.d_pow, $msg.e_stop, $msg.err_c, $msg.in_err, $msg.in_mo, $msg.mode, $msg.mo_pos
+    ; Convert inputs to bytes
+
+        $msg.len = $LNGB(msg.len)
+        $msg.type = $LNGB(msg.type)
+        $cmd.type = $LNGB(cmd.type)
+        $msg.reply = $LNGB(msg.reply)
+        $msg.d_pow = $LNGB(msg.d_pow)
+        $msg.e_stop = $LNGB(msg.e_stop)
+        $msg.err_c = $LNGB(msg.err_c)
+        $msg.in_err = $LNGB(msg.in_err)
+        $msg.in_mo = $LNGB(msg.in_mo)
+        $msg.mode = $LNGB(msg.mode)
+        $msg.mo_pos = $LNGB(msg.mo_pos)
+
+    ; Format the message
+        $msg = ""
+        $msg = $ENCODE($msg.len,$msg.type,$cmd.type,$msg.reply,$msg.d_pow,$msg.e_stop,$msg.err_c,$msg.in_err,$msg.in_mo,$msg.mode,$msg.mo_pos,$msg)
+
+        RETURN
+.END
+.PROGRAM ros.msg.res(msg.len, msg.type, cmd.type, msg.reply, msg.sequence, $msg)
+;
+; ABSTRACT: Generate response message
+;
+; INPUTS:   msg.len     Message length
+;           msg.type    Message type
+;           cmd.type    Command type
+;           msg.reply   Message reply
+;           msg.sequenz Message sequenznumber
+;
+; OUTPUTS:  $msg        The message string
+;
+; SIDE EFFECTS:
+;
+; DATA STRUCT:
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2018 by Benjamin Schellenbeck
+        LOCAL $msg.len, $msg.type, $cmd.type, $msg.reply, $msg.sequence
+    ; Convert inputs to bytes
+
+        $msg.len = $LNGB(msg.len)
+        $msg.type = $LNGB(msg.type)
+        $cmd.type = $LNGB(cmd.type)
+        $msg.reply = $LNGB(msg.reply)
+        $msg.sequence = $LNGB(msg.sequence)
+
+    ; Format the message
+
+        $msg = ""
+        $msg = $ENCODE($msg.len,$msg.type,$cmd.type,$msg.reply,$msg.sequence)
+
+        RETURN
+.END
+.PROGRAM ros.read.float(lun, floating_p)
+;
+; ABSTRACT: Checks robot states, create ros status message and send it to ros
+;
+; INPUTS:       lun     The TCP lun to read
+;
+; OUTPUTS:      None
+;
+; SIDE EFFECTS: None
+;
+; DATA STRUCT:
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2018 by Benjamin Schellenbeck
+
+        AUTO c[4]
+        LOCAL $tmp, i
+
+        $tmp = ""
+        FOR i = 1 TO 4
+            c[i] = GETC(lun,2)
+            $tmp = $tmp+$CHR(c[i])
+        END
+        floating_p = FLTB($tmp)
+
+.END
+.PROGRAM ros.robot.state(lun)
+;
+; ABSTRACT: Check robot status and send it to ROS
+;
+; INPUTS:   lun  The TCP lun to write
+;
+; OUTPUTS:
+;
+; SIDE EFFECTS:
+;
+; DATA STRUCT:
+;
+; MISC:  Program created in ACE version 3.7.3.152
+    LOCAL drives_powered, e_stopped, motion_possible, error_code, in_error, in_motion, mode, stop
+    LOCAL $msg
+
+    drives_powered = 0
+    e_stopped = 0
+    error_code = 0
+    in_error = 0
+    in_motion = 0
+    mode = 0
+
+    motion_possible = 0
+
+
+    ;Drive power status
+    IF (SWITCH(POWER)) THEN
+        drives_powered = 1
+    ELSE
+        drives_powered = 0
+    END
+    ;e-stopped
+    stop = STATE(4) BAND 4
+    IF stop THEN
+        e_stopped = 1
+    ELSE
+        e_stopped = 0
+    END
+
+    ;Error status
+
+    error_code = ERROR(0,0)
+    IF error_code < 0 THEN
+        in_error = 1
+    END
+
+    ;Robot motion status
+    IF STATE(9) > 0 THEN
+        in_motion = 1
+        motion_possible = 0
+    ELSE
+        in_motion = 0
+        motion_possible = 1
+    END
+
+    ;Robot Mode
+    CASE STATE(5) OF   ;Decide what happened
+      VALUE 1:
+        mode = 2
+      VALUE 2:
+        mode = 1
+    END
+
+    ;length, msg_type, cmd_type, reply_type, drives_powered, e_stopped, error_code in_error, in_motion, mode, motion_possible
+    CALL ros.msg.status(40, 13, 1, 0, drives_powered, e_stopped, error_code, in_error, in_motion, mode, motion_possible, $msg)
+    WRITE (lun) $msg, /S
+    RETURN
+.END
+.PROGRAM gripper_test()
+;
+; ABSTRACT: Simulates the input states to test the ROS gripper programs
+;
+; INPUTS:   None.
+;
+; OUTPUTS:  None.
+;
+; SIDE EFFECTS: None.
+;
+; DATA STRUCT:  None.
+;
+; MISC:  Program created in ACE version 3.7.3.152
+
+        WHILE (TRUE) DO
+            WAIT 0.5
+            IF (SIG(4) == TRUE) THEN
+                IF SIG(-3) == TRUE THEN
+                    SIGNAL (1106)
+                    SIGNAL (-1105)
+                END
+            END
+            IF (SIG(-4) == TRUE) THEN
+                IF SIG(3) == TRUE THEN
+                    SIGNAL (-1106)
+                    SIGNAL (1105)
+                END
+            END
+        END
+.END
+.PROGRAM ros.io()
+;
+; ABSTRACT: I/O Interface
+;
+; INPUTS: None.
+;
+; OUTPUTS: None.
+;
+; SIDE EFFECTS: None.
+;
+; DATA STRUCT: None.
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2018 by Benjamin Schellenbeck
+
+        AUTO handle, $in.str, do_wait, lun, status, repeat_loop, io_mode, io_number
+        AUTO $msg.io_number
+
+        do_wait = 0
+        lun = 7
+
+; Attach the TCP device (mode=4 means allocate next available LUN).
+
+        ATTACH (lun, 4) "TCP"
+        status = IOSTAT(lun)        ;Check status of ATTACH
+        IF status < 0 THEN
+            TYPE "Error from ATTACH:", $ERROR(status)
+            GOTO 100
+        END
+
+; Set up a socket with local port #1234, to accept 5 client
+; connections, with a buffer size of 1024 bytes.
+
+        FOPEN (lun, 16) "/LOCAL_PORT "+$ENCODE(io.port)+" /CLIENTS 5 /BUFFER_SIZE 1024"
+        status = IOSTAT(lun)        ;Check status of ATTACH
+        IF status < 0 THEN
+            TYPE "Error from FOPEN:", $ERROR(status)
+            GOTO 100
+        END
+
+        repeat_loop = TRUE
+        WHILE repeat_loop DO
+            WAIT
+            READ (lun, handle, do_wait) $in.str
+            status = IOSTAT(lun)
+            CASE status OF
+              VALUE 1:        ;Success--echo string back
+                io_mode = LNGB($in.str)
+        ;TYPE "Received string: ", $ENCODE(io_mode)
+
+                READ (lun, handle, do_wait) $in.str
+                io_number = LNGB($in.str)
+        ;TYPE "Received string: ", $ENCODE(io_number)
+
+                IF io_mode == 1 THEN
+        ;TYPE "READ"
+                    $msg.io_number = $ENCODE(SIG(io_number))
+
+
+                    WRITE (lun, handle) $msg.io_number, /N
+
+                ELSE
+           ;TYPE "WRITE"
+                    SIGNAL (io_number)
+                    WRITE (lun, handle) "1", /N
+                END
+
+              VALUE 100:    ;New connection opened
+                TYPE "Newconnection established. Handle =", handle
+
+              VALUE 101:    ;Connection closed
+                TYPE "Connection closed.  Handle =", handle
+                FCMND (lun, 600) $INTB(handle) ;Deallocates handle
+                status = IOSTAT(lun)    ;Check status of FCMND
+                IF status < 0 THEN
+                    TYPE "Error from FCMND:", $ERROR(status)
+                    GOTO 100
+                END
+                WAIT
+              VALUE -526:     ;No data received
+              ANY      ;Some other error
+                TYPE "Error during READ:   ", $ERROR(status)
+                GOTO 100
+            END
+        END
+
+; Close all open client connections, and release the logical unit.
+
+   100  FCLOSE (lun)
+        DETACH (lun)
+
+        RETURN
+
+.END
+.PROGRAM ros.srv.cmd()
+;
+; ABSTRACT:     TCP sever for listening to joint commands from ROS.
+;
+; INPUTS:       None.
+;
+; OUTPUTS:      None.
+;
+; SIDE EFFECTS: Causes robot motion.
+;
+; DATA STRUCT: None.
+;
+; MISC:  Program created in ACE version 3.6.3.2
+;
+;* Copyright (c) 2012 by Adept Technology, Inc. (Original version: https://github.com/ros-industrial/swri-ros-pkg/blob/master/adept/adept_common/V%2B/ros.v2)
+
+;* Copyright (c) 2018 by Benjamin Schellenbeck (Further developed version)
+
+        AUTO REAL jts[10], lun
+        LOCAL idx, status, msg.unused, msg.len, msg.type, cmd.type, msg.reply, msg.sequence, msg.velocity, msg.duration
+        LOCAL $msg
+        LOCAL #loc
+    ; Initialize joints
+
+        FOR idx = 1 TO 10
+            jts[idx] = 0
+        END
+
+    ; Open a TCP port
+
+        ATTACH (lun, 4) "TCP"
+        FOPEN (lun, 16) "/LOCAL_PORT"+$ENCODE(cmd.port)+" /CLIENTS 1 /BUFFER_SIZE 1024"
+        status = IOSTAT(lun)
+        IF (status < 0) THEN
+            TYPE "Error opening cmd TCP port: "+$ERROR(status)
+            GOTO 100
+        END
+
+    ; Read 4 bytes from connection
+
+        CALL ros.read.4bytes(lun, msg.unused)
+        TYPE "ROS connected to V+ command server"
+
+    ; Attach the robot and set speeds and accels for move
+
+        SELECT ROBOT = 1
+        ATTACH ()
+        SPEED 100 ALWAYS
+        ACCEL (1) 100, 100
+
+    ; Server loop
+
+        WHILE run DO
+            status = IOSTAT(lun)
+            IF (status == -562) THEN
+                TYPE "Network closed! Close TCP Port for ros.srv.cmd"
+                GOTO 100
+            END
+
+            CALL ros.read.4bytes(lun, msg.len)         ;Message length
+        ;TYPE "len: "+$ENCODE(msg.len)
+            CALL ros.read.4bytes(lun, msg.type)           ;Message type
+        ;TYPE "type: "+$ENCODE(msg.type)
+            CALL ros.read.4bytes(lun, cmd.type)           ;Command type
+        ;TYPE "cmd type: "+$ENCODE(cmd.type)
+            CALL ros.read.4bytes(lun, msg.reply)   ;Message reply
+        ;TYPE "reply: "+$ENCODE(msg.reply)
+            CALL ros.read.4bytes(lun, msg.sequence)  ;Message sequenz
+        ;TYPE "sequenz: "+$ENCODE(msg.sequence)
+            CALL ros.read.joints(lun, jts[])       ;Joint values
+        ;TYPE $ENCODE(jts[1],",",jts[2],",",jts[3],",",jts[4])
+            CALL ros.read.float(lun, msg.velocity)  ;Message velocity
+        ;TYPE "velocity: "+$ENCODE(msg.velocity)
+            CALL ros.read.float(lun, msg.duration)  ;Message duration
+        ;TYPE "duration: "+$ENCODE(msg.duration)
+
+         ;If Streamer
+            IF (cmd.type == 2) THEN
+                IF (msg.sequence == -4) THEN
+                    CALL ros.msg.res(16, 11, 3, 1, -4, $msg)
+
+                    WRITE (lun) $msg, /S
+                    GOTO 101
+                ELSE
+                    CALL ros.msg.res(16, 11, 3, 1, 0, $msg)
+
+                    WRITE (lun) $msg, /S
+                END
+            END
+
+            IF (msg.sequence == -4) THEN
+                CALL ros.msg.res(16, 11, 3, 1, -4, $msg)
+
+                WRITE (lun) $msg, /S
+                GOTO 101
+            END
+
+            SET #loc = #PPOINT(jts[1],jts[2],jts[3],jts[4])
+
+            MOVE #loc
+   101
+        END
+
+    ; Close the TCP port
+   100
+        FCLOSE (lun)
+        DETACH (lun)
+
+.END

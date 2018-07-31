@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+	<!-- joint_state_aggregator: combines 2 joint_states topic messages  -->
+	<node name="joint_state_aggregator" pkg="joint_state_aggregator" type ="joint_state_aggregator" output="screen">
+	  	<param name="rate" value="10"/>
+	  	<param name="robot_joint_state_topic_name" value="robot_joint_states" />
+	  	<param name="gripper_joint_state_topic_name" value="gripper_joint_states" />
+	</node>
+</launch>

@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<launch>
+	<!--position_gripper_action_server: -->
+	<node pkg="adept_gripper_programs" type="position_gripper_action_server" name="gripper_action_server" output="screen">
+		<rosparam command="load" file="$(find cobra_s600_collision_avoidance_moveit_cfg)/param/gripper_action_param.yaml"/> 
+		<param name="grasp_output_nr" value="4" /> 
+		<param name="release_output_nr" value="3" />
+		<param name="min_position" value="0.000" /> 
+		<param name="max_position" value="0.006" /> 
+		<param name="goal_timeout" value="1.0" />
+	</node>
+</launch>
