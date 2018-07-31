@@ -113,7 +113,7 @@ roslaunch adept_viper_s650_test_gripper_moveit_config moveit_planning_execution_
 
 ### Start Cobra s600:
 
-1. Load the V + file adept_ros.v2 into Adept ACE and start the program a.ros () in task 0.
+1. Load the V + file adept_ros_scara.v2 into Adept ACE and start the program a.ros () in task 0.
 2. Start MoveIT in trajectory downloading mode:
 ```
 roslaunch adept_cobra_s600_moveit_config moveit_planning_execution_downloader.launch sim:=false robot_ip:=xxx.xxx.xxx.xxx
